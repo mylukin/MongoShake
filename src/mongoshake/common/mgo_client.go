@@ -1,12 +1,13 @@
 package utils
 
 import (
-	"time"
 	"fmt"
+	"strings"
+	"time"
 
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo"
 	"github.com/vinllen/mgo/bson"
-	LOG "github.com/vinllen/log4go"
 )
 
 type MongoConn struct {
@@ -16,7 +17,11 @@ type MongoConn struct {
 
 func NewMongoConn(url string, connectMode string, timeout bool, readConcern, writeConcern string) (*MongoConn, error) {
 	if connectMode == VarMongoConnectModeStandalone {
-		url += "?connect=direct"
+		if strings.Index(url, "?") == -1 {
+			url += "?connect=direct"
+		} else {
+			url += "&connect=direct"
+		}
 	}
 
 	session, err := mgo.Dial(url)
