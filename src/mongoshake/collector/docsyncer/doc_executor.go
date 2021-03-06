@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"mongoshake/collector/configure"
-	"mongoshake/common"
+	conf "mongoshake/collector/configure"
+	utils "mongoshake/common"
 	"mongoshake/oplog"
 
+	"sync"
+
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo"
 	"github.com/vinllen/mgo/bson"
-	LOG "github.com/vinllen/log4go"
-	"sync"
 )
 
 var (
 	GlobalCollExecutorId int32 = -1
-	GlobalDocExecutorId int32 = -1
+	GlobalDocExecutorId  int32 = -1
 )
 
 type CollectionExecutor struct {
@@ -47,10 +48,10 @@ func GenerateCollExecutorId() int {
 
 func NewCollectionExecutor(id int, mongoUrl string, ns utils.NS, syncer *DBSyncer) *CollectionExecutor {
 	return &CollectionExecutor{
-		id:         id,
-		mongoUrl:   mongoUrl,
-		ns:         ns,
-		syncer:     syncer,
+		id:       id,
+		mongoUrl: mongoUrl,
+		ns:       ns,
+		syncer:   syncer,
 		// batchCount: 0,
 	}
 }
@@ -194,7 +195,7 @@ func (exec *DocExecutor) doSync(docs []*bson.Raw) error {
 	if conf.Options.LogLevel == utils.VarLogLevelDebug {
 		var docBeg, docEnd bson.M
 		bson.Unmarshal(docs[0].Data, &docBeg)
-		bson.Unmarshal(docs[len(docs) - 1].Data, &docEnd)
+		bson.Unmarshal(docs[len(docs)-1].Data, &docEnd)
 		LOG.Debug("DBSyncer id[%v] doSync with table[%v] batch _id interval [%v, %v]", exec.syncer.id, ns,
 			docBeg["_id"], docEnd["_id"])
 	}
@@ -251,7 +252,7 @@ func (exec *DocExecutor) tryOneByOne(input []interface{}, index int, collectionH
 		}
 
 		if !conf.Options.FullSyncExecutorInsertOnDupUpdate {
-			return fmt.Errorf("duplicate key error[%v], you can clean the document on the target mongodb, " +
+			return fmt.Errorf("duplicate key error[%v], you can clean the document on the target mongodb, "+
 				"or enable %v to solve, but full-sync stage needs restart",
 				err, "full_sync.executor.insert_on_dup_update")
 		} else {
@@ -260,7 +261,8 @@ func (exec *DocExecutor) tryOneByOne(input []interface{}, index int, collectionH
 				return fmt.Errorf("parse '_id' from document[%v] failed", docD)
 			}
 			if err := collectionHandler.UpdateId(id, docD); err != nil {
-				return fmt.Errorf("convert oplog[%v] from insert to update run failed[%v]", docD, err)
+				LOG.Warn("convert oplog[%v] from insert to update run failed[%v]", docD, err)
+				return nil
 			}
 		}
 	}

@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo"
@@ -32,11 +31,7 @@ func NewMongoConn(url string, connectMode string, timeout bool, readConcern, wri
 	// maximum pooled connections. the overall established sockets
 	// should be lower than this value(will block otherwise)
 	session.SetPoolLimit(256)
-	if timeout {
-		session.SetSocketTimeout(10 * time.Minute)
-	} else {
-		session.SetSocketTimeout(0)
-	}
+	session.SetSocketTimeout(0)
 	if readConcern != ReadWriteConcernDefault || writeConcern != ReadWriteConcernDefault {
 		session.EnsureSafe(&mgo.Safe{
 			RMode: readConcern,
